@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(gh pr:*)",
+      "Bash(python3 -c \":*)",
+      "Bash(git pull)",
+      "Bash(git add CLAUDE.md .cursorrules .github/copilot-instructions.md CHANGELOG.md .github/ISSUE_TEMPLATE/ governance-docs/coding-standards.md)",
+      "Bash(git add CLAUDE.md .cursorrules .github/copilot-instructions.md governance-docs/coding-standards.md governance-docs/sdgp-main.md governance-docs/App-Documentation-Governance-Kit.md CHANGELOG.md)",
+      "Bash(git add CLAUDE.md .cursorrules .github/copilot-instructions.md governance-docs/coding-standards.md CHANGELOG.md)",
+      "Bash(git add CLAUDE.md .cursorrules .github/copilot-instructions.md CHANGELOG.md)"
+    ]
+  }
+}

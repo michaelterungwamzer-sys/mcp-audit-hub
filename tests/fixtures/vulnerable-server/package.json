@@ -1,0 +1,10 @@
+{
+    "name": "vulnerable-mcp-server",
+    "version": "1.0.0",
+    "description": "A deliberately vulnerable MCP server (test fixture)",
+    "type": "module",
+    "dependencies": {
+        "@modelcontextprotocol/sdk": "^1.0.0",
+        "loash": "^1.0.0"
+    }
+}

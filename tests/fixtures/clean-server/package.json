@@ -1,0 +1,9 @@
+{
+    "name": "clean-mcp-server",
+    "version": "1.0.0",
+    "description": "A clean MCP server with no vulnerabilities (test fixture)",
+    "type": "module",
+    "dependencies": {
+        "@modelcontextprotocol/sdk": "^1.0.0"
+    }
+}

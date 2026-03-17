@@ -1,0 +1,29 @@
+# Organization-level documents (not project-level)
+org-policies/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Dependencies
+node_modules/
+vendor/
+
+# IDE and editor files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Build output
+dist/
+build/
+*.log
+
+# OS generated files
+desktop.ini
+ehthumbs.db

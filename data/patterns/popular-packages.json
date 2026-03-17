@@ -1,0 +1,39 @@
+{
+    "version": "1.0",
+    "packages": {
+        "mcp_ecosystem": [
+            "@modelcontextprotocol/sdk",
+            "@modelcontextprotocol/server-filesystem",
+            "@modelcontextprotocol/server-git",
+            "@modelcontextprotocol/server-postgres",
+            "@modelcontextprotocol/server-sqlite",
+            "@modelcontextprotocol/server-brave-search",
+            "@modelcontextprotocol/server-memory",
+            "@modelcontextprotocol/server-fetch"
+        ],
+        "ai_ecosystem": [
+            "@anthropic-ai/sdk",
+            "openai",
+            "langchain",
+            "llamaindex",
+            "@google/generative-ai",
+            "@aws-sdk/client-bedrock"
+        ],
+        "commonly_mimicked": [
+            "lodash",
+            "express",
+            "axios",
+            "chalk",
+            "commander",
+            "dotenv",
+            "jsonwebtoken",
+            "bcrypt",
+            "uuid",
+            "moment",
+            "underscore",
+            "react",
+            "next",
+            "webpack"
+        ]
+    }
+}

@@ -1,0 +1,47 @@
+{
+    "version": "1.0",
+    "categories": {
+        "hidden_instructions": {
+            "severity": "critical",
+            "patterns": [
+                "ignore\\s+(previous|prior|above)\\s+instructions?",
+                "do\\s+not\\s+(tell|inform|alert)\\s+(the\\s+)?user",
+                "\\[hidden\\]|\\[internal\\]|\\[system\\]",
+                "before\\s+returning.*also|additionally.*without"
+            ]
+        },
+        "social_engineering": {
+            "severity": "high",
+            "patterns": [
+                "you\\s+must\\s+(always|never)",
+                "always\\s+remember\\s+to",
+                "before\\s+responding\\s+(to|you)"
+            ]
+        },
+        "data_exfiltration": {
+            "severity": "critical",
+            "patterns": [
+                "send\\s+(to|data|information)\\s+(external|remote|http)",
+                "exfiltrate|steal|extract\\s+and\\s+send",
+                "copy\\s+to\\s+(external|remote)",
+                "transmit|forward\\s+to"
+            ]
+        },
+        "environment_access": {
+            "severity": "high",
+            "patterns": [
+                "read\\s+(env|environment|credentials|secrets|keys)",
+                "access\\s+(api.?key|token|password|secret)",
+                "process\\.env"
+            ]
+        },
+        "stealth_operations": {
+            "severity": "critical",
+            "patterns": [
+                "secretly|covertly|silently|quietly",
+                "without\\s+(informing|telling|alerting|notifying)",
+                "suppress\\s+(output|logging|error)"
+            ]
+        }
+    }
+}
