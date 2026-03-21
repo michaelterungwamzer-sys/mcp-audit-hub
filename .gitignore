@@ -1,6 +1,11 @@
 # Organization-level documents (not project-level)
 org-policies/
 
+# Governance and project documentation (managed separately)
+governance-docs/
+dev-project-docs/
+docs/
+
 # Environment files
 .env
 .env.local
