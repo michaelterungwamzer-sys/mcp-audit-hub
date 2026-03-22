@@ -29,6 +29,14 @@ dist/
 build/
 *.log
 
+# Local hub config (contains Notion database IDs)
+mcp-audit.config.json
+
+# Temporary test/debug scripts
+scripts/test-*.ts
+scripts/inspect-*.ts
+scripts/list-*.ts
+
 # OS generated files
 desktop.ini
 ehthumbs.db

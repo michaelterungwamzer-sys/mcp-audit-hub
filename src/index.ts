@@ -9,3 +9,12 @@ export type {
     MCPTool,
     AuditConfig,
 } from './types/index.js';
+export {
+    MCPClientManager,
+    NotionTools,
+    initNotionWorkspace,
+    syncToNotion,
+    getHubStatus,
+    startWatchLoop,
+} from './hub/index.js';
+export type { HubConfig, SyncResult } from './hub/index.js';

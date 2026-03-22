@@ -2,6 +2,7 @@ import { Command } from 'commander';
 import { createScanCommand } from './commands/scan.js';
 import { createInitCommand } from './commands/init.js';
 import { createChecksCommand } from './commands/checks.js';
+import { createHubCommand } from './commands/hub.js';
 
 const VERSION = '0.1.0';
 
@@ -16,6 +17,7 @@ export function createProgram(): Command {
     program.addCommand(createScanCommand());
     program.addCommand(createInitCommand());
     program.addCommand(createChecksCommand());
+    program.addCommand(createHubCommand());
 
     return program;
 }
