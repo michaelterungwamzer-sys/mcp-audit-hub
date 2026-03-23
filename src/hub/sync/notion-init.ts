@@ -139,6 +139,48 @@ function createFindingsProperties(
     };
 }
 
+function createEscalationsProperties(): Record<string, unknown> {
+    return {
+        Title: { title: {} },
+        'Server Name': { rich_text: {} },
+        'Previous Score': { number: { format: 'number' } },
+        'New Score': { number: { format: 'number' } },
+        Delta: { number: { format: 'number' } },
+        Severity: {
+            select: {
+                options: [
+                    { name: 'critical', color: 'red' },
+                    { name: 'high', color: 'orange' },
+                    { name: 'medium', color: 'yellow' },
+                    { name: 'low', color: 'gray' },
+                ],
+            },
+        },
+        Trigger: {
+            select: {
+                options: [
+                    { name: 'score-regression', color: 'red' },
+                    { name: 'new-critical-finding', color: 'orange' },
+                    { name: 'status-downgrade', color: 'yellow' },
+                ],
+            },
+        },
+        Status: {
+            select: {
+                options: [
+                    { name: 'open', color: 'red' },
+                    { name: 'acknowledged', color: 'yellow' },
+                    { name: 'investigating', color: 'blue' },
+                    { name: 'resolved', color: 'green' },
+                ],
+            },
+        },
+        'Scan History ID': { rich_text: {} },
+        'Created At': { date: {} },
+        Notes: { rich_text: {} },
+    };
+}
+
 function createScanRequestsProperties(_historyDbId: string): Record<string, unknown> {
     return {
         Target: { title: {} },
@@ -189,10 +231,17 @@ export async function initNotionWorkspace(
         createScanRequestsProperties(history.id),
     );
 
+    const escalations = await notionTools.createDatabase(
+        parentPageId,
+        HUB_DATABASE_TITLES.escalations,
+        createEscalationsProperties(),
+    );
+
     return {
         serverRegistry: registry.id,
         scanHistory: history.id,
         findings: findings.id,
         scanRequests: scanRequests.id,
+        escalations: escalations.id,
     };
 }

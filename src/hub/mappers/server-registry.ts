@@ -1,5 +1,5 @@
 import type { ScanResult } from '../../types/index.js';
-import { deriveRiskClassification } from '../types/hub.js';
+import { deriveRiskClassification, CADENCE_INTERVALS } from '../types/hub.js';
 
 export function detectSource(target: string): string {
     if (target.startsWith('/') || target.startsWith('./') || target.startsWith('..') || target.includes('\\')) {
@@ -75,6 +75,21 @@ export function mapToUpdateRegistryProperties(
         },
         'Risk Classification': {
             select: { name: deriveRiskClassification(scanResult.summary.score) },
+        },
+    };
+}
+
+export function mapAdvanceReviewDate(
+    cadence: string,
+    currentDueDate: string,
+): Record<string, unknown> {
+    const days = CADENCE_INTERVALS[cadence] ?? 30;
+    const current = new Date(currentDueDate);
+    const next = new Date(current.getTime() + days * 24 * 60 * 60 * 1000);
+
+    return {
+        'Next Review Due': {
+            date: { start: next.toISOString().split('T')[0] },
         },
     };
 }

@@ -4,6 +4,7 @@ import {
     detectLanguage,
     mapToNewRegistryProperties,
     mapToUpdateRegistryProperties,
+    mapAdvanceReviewDate,
 } from '../../../../src/hub/mappers/server-registry.js';
 import type { ScanResult } from '../../../../src/types/index.js';
 
@@ -91,5 +92,31 @@ describe('mapToUpdateRegistryProperties', () => {
         expect(props['Scan Count']).toEqual({ number: 4 });
         expect(props['Risk Classification']).toEqual({ select: { name: 'medium' } });
         expect(props['Last Scanned']).toBeDefined();
+    });
+});
+
+describe('mapAdvanceReviewDate', () => {
+    it('advances weekly by 7 days', () => {
+        const props = mapAdvanceReviewDate('weekly', '2026-03-23');
+        const nextDate = (props['Next Review Due'] as { date: { start: string } }).date.start;
+        expect(nextDate).toBe('2026-03-30');
+    });
+
+    it('advances monthly by 30 days', () => {
+        const props = mapAdvanceReviewDate('monthly', '2026-03-01');
+        const nextDate = (props['Next Review Due'] as { date: { start: string } }).date.start;
+        expect(nextDate).toBe('2026-03-31');
+    });
+
+    it('advances quarterly by 90 days', () => {
+        const props = mapAdvanceReviewDate('quarterly', '2026-01-01');
+        const nextDate = (props['Next Review Due'] as { date: { start: string } }).date.start;
+        expect(nextDate).toBe('2026-04-01');
+    });
+
+    it('defaults to 30 days for unknown cadence', () => {
+        const props = mapAdvanceReviewDate('unknown', '2026-03-01');
+        const nextDate = (props['Next Review Due'] as { date: { start: string } }).date.start;
+        expect(nextDate).toBe('2026-03-31');
     });
 });

@@ -85,11 +85,12 @@ function createHubInitCommand(): Command {
                 });
 
                 console.log('');
-                console.log('  ✔ Created database: MCP Server Registry');
-                console.log('  ✔ Created database: Scan History');
-                console.log('  ✔ Created database: Findings');
-                console.log('  ✔ Created database: Scan Requests');
-                console.log('  ✔ Saved database IDs to mcp-audit.config.json');
+                console.log('  \u2714 Created database: MCP Server Registry');
+                console.log('  \u2714 Created database: Scan History');
+                console.log('  \u2714 Created database: Findings');
+                console.log('  \u2714 Created database: Scan Requests');
+                console.log('  \u2714 Created database: Escalations');
+                console.log('  \u2714 Saved database IDs to mcp-audit.config.json');
                 console.log('');
                 console.log('  Hub is ready. Run `mcp-audit hub sync <target>` to scan and sync.');
 
@@ -243,9 +244,10 @@ function createHubWatchCommand(): Command {
     const cmd = new Command('watch');
 
     cmd
-        .description('Watch Notion for scan requests and process them')
+        .description('Watch Notion for scan requests and recurring scans')
         .option('--interval <seconds>', 'poll interval in seconds', '30')
-        .action(async (options: { interval: string }) => {
+        .option('--escalation-threshold <points>', 'score drop that triggers an escalation', '15')
+        .action(async (options: { interval: string; escalationThreshold: string }) => {
             const hubConfig = await loadHubConfig();
             if (!hubConfig?.databases) {
                 console.error('Error: Hub not configured. Run `mcp-audit hub init --page <id>` first.');
@@ -258,9 +260,15 @@ function createHubWatchCommand(): Command {
                 process.exit(1);
             }
 
+            const escalationThreshold = parseInt(options.escalationThreshold, 10);
+            if (isNaN(escalationThreshold) || escalationThreshold < 1 || escalationThreshold > 50) {
+                console.error('Error: Escalation threshold must be between 1 and 50.');
+                process.exit(1);
+            }
+
             const auditConfig = await loadConfig({});
 
-            console.log(`⠋ Watching Notion for scan requests (every ${intervalSeconds}s)...\n`);
+            console.log(`\u2919 Watching Notion for scan requests + recurring scans (every ${intervalSeconds}s, escalation threshold: ${escalationThreshold}pts)...\n`);
 
             const { client, tools } = await createNotionClient(hubConfig.mcpServer);
             const abortController = new AbortController();
@@ -282,6 +290,7 @@ function createHubWatchCommand(): Command {
                 auditConfig,
                 {
                     intervalSeconds,
+                    escalationThreshold,
                     signal: abortController.signal,
                 },
             );
@@ -318,7 +327,13 @@ function createHubStatusCommand(): Command {
                     console.log(`  Pending Requests:  ${status.pendingRequests}`);
 
                     if (status.overdueReviews > 0) {
-                        console.log(`  Overdue Reviews:   ${status.overdueReviews} ⚠`);
+                        console.log(`  Overdue Reviews:   ${status.overdueReviews} \u26A0`);
+                    }
+                    if (status.upcomingReviews > 0) {
+                        console.log(`  Upcoming Reviews:  ${status.upcomingReviews} (next 7 days)`);
+                    }
+                    if (status.openEscalations > 0) {
+                        console.log(`  Open Escalations:  ${status.openEscalations} \u26A0`);
                     }
 
                     if (status.recentScans.length > 0) {

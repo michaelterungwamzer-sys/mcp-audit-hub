@@ -56,6 +56,21 @@ A team member adds a row in Notion's Scan Requests database. An agent picks it u
 
 The compliance officer sees the results. The engineering lead sees the risk score. The CISO gets auditor-ready evidence. All in Notion.
 
+**Direction 3: Continuous Monitoring**
+
+Point-in-time audits are insufficient. An MCP server that passed last month may have introduced a vulnerable dependency or an undisclosed network call in a subsequent release. ISO 27001 A.18.2 requires controls to be verified at planned intervals, not merely on initial assessment.
+
+An admin sets a `Review Cadence` (weekly, monthly, or quarterly) and a `Next Review Due` date on any server in the Notion Server Registry. The watch agent automatically re-scans overdue servers, advances the review date, and creates an **Escalation** entry if the score regresses beyond a configurable threshold.
+
+```
+[09:15:00] Recurring scan: @mcp/server-filesystem (cadence: weekly, due: 2026-03-22)
+[09:15:12] Scan complete: 52/100 WARN (4 findings)
+[09:15:14] ESCALATION: score-regression for @mcp/server-filesystem (85 -> 52)
+[09:15:14] Recurring scan complete ✔
+```
+
+The security team opens the Escalations database in Notion, sees the regression, and tracks resolution. No one monitors a terminal; Notion is the single pane of glass.
+
 ### What the Scanner Detects
 
 Six analyzers perform AST-based static analysis on every MCP server:
@@ -75,17 +90,16 @@ Every analyzer targets a threat vector documented in the [Li & Gao MCP security 
 
 ### ISO 27001 Alignment
 
-This is the part that matters beyond the hackathon.
-
 When an ISO 27001 auditor asks *"How do you manage the security of third-party MCP servers?"*, the organisation opens Notion:
 
-| Auditor asks...                | Evidence in Notion                                                |
-| ------------------------------ | ----------------------------------------------------------------- |
-| "What MCP servers do you use?" | **Server Registry**: full inventory with risk classification      |
-| "How do you assess them?"      | **Scan History**: timestamped scans with scores                   |
-| "What vulnerabilities exist?"  | **Findings**: every finding with severity and remediation status  |
-| "How often do you reassess?"   | **Server Registry**: review cadence and next review due date      |
-| "Who can request assessments?" | **Scan Requests**: anyone on the team, with full audit trail      |
+| Auditor asks...                | Evidence in Notion                                               |
+| ------------------------------ | ---------------------------------------------------------------- |
+| "What MCP servers do you use?" | **Server Registry**: full inventory with risk classification     |
+| "How do you assess them?"      | **Scan History**: timestamped scans with scores                  |
+| "What vulnerabilities exist?"  | **Findings**: every finding with severity and remediation status |
+| "How often do you reassess?"   | **Server Registry**: review cadence and next review due date     |
+| "Show me regression evidence"  | **Escalations**: score drops, status downgrades, critical findings |
+| "Who can request assessments?" | **Scan Requests**: anyone on the team, with full audit trail     |
 
 Every feature in mcp-audit-hub maps to an Annex A control:
 
@@ -96,7 +110,7 @@ Every feature in mcp-audit-hub maps to an Annex A control:
 | **A.12.4** Audit Logging            | Scan History (append-only)               |
 | **A.12.6** Vulnerability Management | 6 analyzers                              |
 | **A.15.1** Supplier Assessment      | Approval gate + reassessment cadence     |
-| **A.18.2** Compliance Review        | Notion-triggered scans + review schedule |
+| **A.18.2** Compliance Review        | Recurring scans with configurable cadence + escalations |
 
 These are the controls auditors look for, delivered through a tool teams will actually use, because it lives in Notion, where they already work.
 
@@ -111,25 +125,26 @@ These are the controls auditors look for, delivered through a tool teams will ac
 **Architecture:**
 
 ```
-┌──────────────────────────────────────────────────────┐
-│  mcp-audit-hub                                        │
+┌────────────────────────────────────────────────────────┐
+│  mcp-audit-hub                                         │
 │                                                        │
-│  CLI: hub init / sync / watch / status                │
+│  CLI: hub init / sync / watch / status                 │
 │       │                    │                           │
 │       v                    v                           │
 │  Scanner Engine       Hub Layer                        │
-│  (6 AST analyzers)    (MCP Client ↔ Notion MCP)       │
+│  (6 AST analyzers)    (MCP Client ↔ Notion MCP)        │
 │                            │                           │
 │                            v                           │
 │                    Notion Workspace                    │
 │                    ├─ Server Registry (asset inventory)│
 │                    ├─ Scan History (audit trail)       │
 │                    ├─ Findings (vulnerability log)     │
-│                    └─ Scan Requests (trigger surface)  │
-└──────────────────────────────────────────────────────┘
+│                    ├─ Scan Requests (trigger surface)  │
+│                    └─ Escalations (regression alerts)  │
+└────────────────────────────────────────────────────────┘
 ```
 
-**Tech stack:** TypeScript, Node.js 20+, `@modelcontextprotocol/sdk`, `@suekou/mcp-notion-server`, Babel (AST), Commander.js, Vitest (50 tests)
+**Tech stack:** TypeScript, Node.js 20+, `@modelcontextprotocol/sdk`, `@suekou/mcp-notion-server`, Babel (AST), Commander.js, Vitest (67 tests)
 
 ## How I Used Notion MCP
 
@@ -149,7 +164,7 @@ That represents roughly a month of work for a team. The result would be a standa
 
 ### What Notion MCP makes possible
 
-With Notion MCP, I replaced all of the above with **four MCP tool calls**:
+With Notion MCP, I replaced all of the above with **five MCP tool calls**:
 
 - **`notion_create_database`**: provisions the entire data model in seconds
 - **`notion_create_database_item`**: writes scan results as structured, queryable data
@@ -170,13 +185,13 @@ That is what Notion MCP makes possible that would have been genuinely difficult 
 
 ### MCP tools used
 
-| Notion MCP Tool                 | How it is used                                                    |
-| ------------------------------- | ----------------------------------------------------------------- |
-| `notion_create_database`        | `hub init`: creates 4 databases with full property schemas        |
-| `notion_create_database_item`   | `hub sync`: creates server entries, scan records, findings        |
-| `notion_query_database`         | `hub watch`: polls for scan requests; `hub sync`: upsert check   |
-| `notion_update_page_properties` | Updates server scores on re-scan; request status lifecycle        |
-| `notion_search`                 | `hub status`: workspace health check                              |
+| Notion MCP Tool                 | How it is used                                                 |
+| ------------------------------- | -------------------------------------------------------------- |
+| `notion_create_database`        | `hub init`: creates 5 databases with full property schemas     |
+| `notion_create_database_item`   | `hub sync`: creates server entries, scan records, findings     |
+| `notion_query_database`         | `hub watch`: polls for scan requests and overdue reviews; `hub sync`: upsert check |
+| `notion_update_page_properties` | Updates server scores on re-scan; request status lifecycle     |
+| `notion_search`                 | `hub status`: workspace health check                           |
 
 ### The meta angle
 

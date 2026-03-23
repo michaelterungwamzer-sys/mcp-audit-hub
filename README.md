@@ -41,7 +41,7 @@ export NOTION_TOKEN="ntn_your_token"
 mcp-audit hub init --page <notion-page-id>
 ```
 
-Creates four linked databases in Notion:
+Creates five linked databases in Notion:
 
 | Database | Purpose | ISO 27001 |
 |----------|---------|-----------|
@@ -49,6 +49,7 @@ Creates four linked databases in Notion:
 | **Scan History** | Immutable audit trail of every scan | A.12.4 |
 | **Findings** | Vulnerability log with severity and remediation status | A.12.6 |
 | **Scan Requests** | Request queue for Notion-triggered scans | A.18.2 |
+| **Escalations** | Score regressions and critical finding alerts | A.12.6, A.18.2 |
 
 ### 2. Scan + Sync — push results to Notion
 
@@ -105,7 +106,38 @@ Then **anyone on the team** can request a scan from Notion:
 
 Non-technical team members can trigger security assessments without CLI access.
 
-### 4. Status Check
+### 4. Recurring Scans with Escalations
+
+Set a review cadence on any server in the Notion Server Registry:
+
+1. Open a server entry in the **Server Registry**
+2. Set `Review Cadence` to `weekly`, `monthly`, or `quarterly`
+3. Set `Next Review Due` to the first review date
+
+The watch agent automatically re-scans overdue servers and advances the review date. If a server's score drops by more than the escalation threshold (default: 15 points), an **Escalation** entry is created in Notion.
+
+```bash
+mcp-audit hub watch --interval 30 --escalation-threshold 15
+```
+
+```
+[09:15:00] Found 2 overdue server(s) for recurring scan
+[09:15:00] Recurring scan: @mcp/server-filesystem (cadence: weekly, due: 2026-03-22)
+[09:15:12] Scan complete: 52/100 WARN (4 findings)
+[09:15:14] Synced to Notion: Registry + History + Findings
+[09:15:14] Next Review Due advanced by weekly interval
+[09:15:14] ESCALATION: score-regression for @mcp/server-filesystem (85 -> 52)
+[09:15:14] Recurring scan complete ✔
+```
+
+Escalation triggers:
+- **Score regression**: score drops by more than the threshold
+- **Status downgrade**: server moves from `pass` to `warn` or `fail`
+- **New critical finding**: scan produces a critical-severity finding
+
+The security team reviews escalations in the **Escalations** database and tracks resolution status.
+
+### 5. Status Check
 
 ```bash
 mcp-audit hub status
@@ -227,7 +259,8 @@ node bin/mcp-audit.js hub watch
 mcp-audit hub init --page <id>          Provision Notion workspace
 mcp-audit hub sync <target>             Scan + push results to Notion
 mcp-audit hub sync-all --dataset <file> Batch scan from JSON file
-mcp-audit hub watch [--interval <sec>]  Watch Notion for scan requests
+mcp-audit hub watch [--interval <sec>]  Watch Notion for scan requests + recurring scans
+                    [--escalation-threshold <pts>]
 mcp-audit hub status [--json]           Workspace summary
 
 mcp-audit scan <target> [options]       Scan only (no Notion)
@@ -267,6 +300,7 @@ mcp-audit init                          Generate default config
                                 │  Scan History         │
                                 │  Findings             │
                                 │  Scan Requests        │
+                                │  Escalations          │
                                 └──────────────────────┘
 ```
 
@@ -282,10 +316,10 @@ mcp-audit init                          Generate default config
 
 Notion MCP (`@suekou/mcp-notion-server`) is the core integration layer. mcp-audit-hub uses it for:
 
-- **`notion_create_database`** — provisions the 4 databases during `hub init`
+- **`notion_create_database`** — provisions the 5 databases during `hub init`
 - **`notion_create_database_item`** — creates server entries, scan history records, and findings
 - **`notion_update_page_properties`** — updates server scores on re-scan, updates request status
-- **`notion_query_database`** — queries for existing servers (upsert), polls for scan requests
+- **`notion_query_database`** — queries for existing servers (upsert), polls for scan requests, detects overdue reviews
 - **`notion_search`** — workspace search for status command
 
 The MCP server is spawned as a child process via `StdioClientTransport` from `@modelcontextprotocol/sdk`. No direct Notion API calls — everything goes through MCP.
@@ -303,7 +337,7 @@ The MCP server is spawned as a child process via `StdioClientTransport` from `@m
 | CLI Framework | Commander.js |
 | AST Parsing | Babel (JS/TS), tree-sitter (Python) |
 | Build | tsup |
-| Tests | Vitest (50 tests, all passing) |
+| Tests | Vitest (67 tests, all passing) |
 
 ---
 
@@ -312,7 +346,7 @@ The MCP server is spawned as a child process via `StdioClientTransport` from `@m
 ```bash
 npm install          # Install dependencies
 npm run build        # Build
-npm test             # Run tests (50 tests)
+npm test             # Run tests (67 tests)
 npm run test:watch   # Watch mode
 npm run typecheck    # Type checking
 ```

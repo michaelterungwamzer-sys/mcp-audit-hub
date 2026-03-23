@@ -3,6 +3,7 @@ export interface HubDatabaseIds {
     scanHistory: string;
     findings: string;
     scanRequests: string;
+    escalations?: string;
 }
 
 export interface MCPServerConfig {
@@ -50,9 +51,11 @@ export interface SyncResult {
 
 export interface WatchLoopOptions {
     intervalSeconds: number;
+    escalationThreshold?: number;
     onRequest?: (target: string, requestedBy: string) => void;
     onComplete?: (target: string, score: number, status: string) => void;
     onError?: (target: string, error: string) => void;
+    onEscalation?: (target: string, previousScore: number, newScore: number) => void;
     signal?: AbortSignal;
 }
 
@@ -63,11 +66,34 @@ export interface ScanRequestEntry {
     notes?: string;
 }
 
+export interface OverdueServerEntry {
+    pageId: string;
+    target: string;
+    reviewCadence: 'weekly' | 'monthly' | 'quarterly';
+    nextReviewDue: string;
+    latestScore: number;
+    latestStatus: string;
+}
+
+export interface EscalationTrigger {
+    type: 'score-regression' | 'new-critical-finding' | 'status-downgrade';
+    previousScore: number;
+    newScore: number;
+    delta: number;
+}
+
+export const CADENCE_INTERVALS: Record<string, number> = {
+    weekly: 7,
+    monthly: 30,
+    quarterly: 90,
+};
+
 export const HUB_DATABASE_TITLES = {
     serverRegistry: 'MCP Server Registry',
     scanHistory: 'Scan History',
     findings: 'Findings',
     scanRequests: 'Scan Requests',
+    escalations: 'Escalations',
 } as const;
 
 export const RISK_CLASSIFICATION = {
