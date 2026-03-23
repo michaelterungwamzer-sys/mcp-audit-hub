@@ -246,10 +246,18 @@ async function processRecurringScans(
                             trigger,
                             syncResult.scanHistoryPageId,
                         );
-                        await notionTools.createPage(
+                        const escalationPage = await notionTools.createPage(
                             databases.escalations,
                             escalationProps,
                         );
+                        // Update Notes separately (some MCP servers drop rich_text on create)
+                        if (escalationProps.Notes) {
+                            try {
+                                await notionTools.updatePage(escalationPage.id, {
+                                    Notes: escalationProps.Notes,
+                                });
+                            } catch { /* best effort */ }
+                        }
                         process.stdout.write(
                             `[${timestamp}] ESCALATION: ${trigger.type} for ${server.target} (${trigger.previousScore} -> ${trigger.newScore})\n`,
                         );

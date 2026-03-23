@@ -92,5 +92,34 @@ export function mapToEscalationProperties(
         'Created At': {
             date: { start: new Date().toISOString() },
         },
+        Notes: {
+            rich_text: [{ text: { content: buildEscalationNotes(target, trigger) } }],
+        },
     };
+}
+
+function buildEscalationNotes(target: string, trigger: EscalationTrigger): string {
+    const lines: string[] = [];
+
+    if (trigger.type === 'score-regression') {
+        lines.push(
+            `Server "${target}" score dropped from ${trigger.previousScore} to ${trigger.newScore} (delta: ${trigger.delta}).`,
+            `This exceeds the configured escalation threshold.`,
+            `Action required: investigate what changed since the last scan and assess whether the regression introduces unacceptable risk.`,
+        );
+    } else if (trigger.type === 'status-downgrade') {
+        lines.push(
+            `Server "${target}" status downgraded. Score moved from ${trigger.previousScore} to ${trigger.newScore}.`,
+            `A status downgrade indicates the server no longer meets the previous compliance threshold.`,
+            `Action required: review scan findings and determine if the server should remain approved.`,
+        );
+    } else if (trigger.type === 'new-critical-finding') {
+        lines.push(
+            `Server "${target}" produced a critical-severity finding during a recurring scan.`,
+            `Critical findings indicate severe vulnerabilities such as command injection, data exfiltration, or tool poisoning.`,
+            `Action required: review the finding immediately and consider blocking the server until remediated.`,
+        );
+    }
+
+    return lines.join(' ');
 }
