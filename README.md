@@ -163,7 +163,7 @@ mcp-audit hub status
 
 ## What It Detects
 
-The scanner runs 6 security analyzers via AST-based static analysis:
+The scanner runs **12 security analyzers** via AST-based static analysis, aligned with the defense recommendations in [Li & Gao (2025)](https://arxiv.org/abs/2510.16558):
 
 | Analyzer | What it finds | Severity |
 |----------|--------------|----------|
@@ -173,6 +173,12 @@ The scanner runs 6 security analyzers via AST-based static analysis:
 | **Network Analysis** | Undisclosed outbound HTTP calls, credential exfiltration via network | Critical / High |
 | **Filesystem Access** | Access to `~/.ssh`, `~/.aws`, `.env`, credential files | Critical / High |
 | **Authentication** | MCP servers exposing tools without any auth mechanism | High |
+| **TLS/Encryption** | Insecure `http://` URLs, disabled certificate verification, `ws://` WebSockets, mixed protocol usage | Critical / High / Medium |
+| **Credential Hygiene** | Hardcoded API keys (AWS, GitHub, OpenAI, Stripe), credentials in URLs, MD5/SHA1 password hashing, secrets in logs | Critical / High |
+| **Security Posture** | Missing rate limiting, missing audit logging, sensitive data in logs, empty catch blocks, missing input validation | High / Medium |
+| **Cross-Server Attacks** | MCP server package dependencies, localhost inter-server communication, shared temp state, prompt injection relay patterns | Critical / High / Medium |
+| **Rug Pull Detection** | Malicious install scripts, obfuscated code (`eval`, base64), suspicious minification, package metadata gaps | Critical / High / Medium |
+| **Tool Allowlist** | Blocklisted packages/tools, system command tool names, privileged operation indicators, excessive tool count | Critical / High / Medium |
 
 ### Scoring
 
@@ -198,7 +204,7 @@ Every feature maps to an ISO 27001:2022 Annex A control:
 | **A.8.1** | Asset inventory | Server Registry = MCP server asset inventory |
 | **A.8.2** | Risk classification | Auto-derived from scan score (critical/high/medium/low) |
 | **A.12.4** | Logging & monitoring | Scan History — timestamped, append-only |
-| **A.12.6** | Vulnerability management | 6 analyzers across tool poisoning, injection, deps, network, filesystem, auth |
+| **A.12.6** | Vulnerability management | 12 analyzers across tool poisoning, injection, deps, network, filesystem, auth, TLS, credential hygiene, security posture, cross-server, rug pull, tool allowlist |
 | **A.14.2** | Secure development | Scan-before-adopt workflow via Approval gate |
 | **A.15.1** | Supplier management | MCP servers are third-party suppliers — tracked with assessment status |
 | **A.18.2** | Compliance review | Review cadence + Notion-triggered scans for continuous assessment |
@@ -281,7 +287,7 @@ mcp-audit init                          Generate default config
            v                               v
 ┌──────────────────┐            ┌──────────────────────┐
 │  Scanner Engine   │            │  Hub Layer (NEW)      │
-│  (6 analyzers)    │            │                       │
+│  (12 analyzers)   │            │                       │
 │                   │            │  MCP Client           │
 │  resolver         │            │  ↕ stdio              │
 │  parser (AST)     │            │  Notion MCP Server    │

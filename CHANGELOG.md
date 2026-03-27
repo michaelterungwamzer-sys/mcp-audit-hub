@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0] - 2026-03-27
+
+### Changed
+- Updated scanner engine documentation to reflect 12 analyzers (up from 6), aligned with defense recommendations in Li & Gao (2025) arXiv:2510.16558
+- Updated ISO 27001 A.12.6 vulnerability management mapping to cover all 12 analyzer categories
+- Updated architecture diagram to reflect 12 analyzers
+
+### Added (Scanner v0.3.0)
+- **TLS/Encryption Verification**: non-TLS URLs, disabled cert verification, insecure WebSockets, mixed protocols (CWE-319, CWE-295)
+- **Credential Hygiene**: hardcoded secrets, credentials in URLs, weak crypto, secrets in logs (CWE-798, CWE-312, CWE-532, CWE-916)
+- **Security Posture**: rate limiting, audit logging, input validation sub-checks (CWE-20, CWE-532)
+- **Cross-Server Attack Detection**: MCP package deps, localhost comms, shared state, prompt injection relay (CWE-918, CWE-829, CWE-74)
+- **Rug Pull Detection**: install script analysis, obfuscated code, suspicious minification, metadata red flags (CWE-506, CWE-829)
+- **Tool Allowlist/Blocklist**: community blocklist, excessive tools, system command names, privileged operations
+
 ## [0.1.0] - 2026-03-17
 
 ### Added
