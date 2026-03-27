@@ -6,20 +6,46 @@ import { DependencyAnalyzer } from './dependency/index.js';
 import { NetworkAnalyzer } from './network/index.js';
 import { FilesystemAnalyzer } from './filesystem/index.js';
 import { AuthenticationAnalyzer } from './authentication/index.js';
+import { TlsVerificationAnalyzer } from './tls-verification/index.js';
+import { SecurityPostureAnalyzer } from './security-posture/index.js';
+import { CredentialHygieneAnalyzer } from './credential-hygiene/index.js';
+import { CrossServerAnalyzer } from './cross-server/index.js';
+import { ToolAllowlistAnalyzer } from './tool-allowlist/index.js';
+import { RugPullAnalyzer } from './rug-pull/index.js';
 
+/**
+ * Describes an analyzer's identity and purpose for display in CLI output.
+ * @property id - Unique analyzer identifier.
+ * @property name - Human-readable analyzer name.
+ * @property description - Brief explanation of what the analyzer checks.
+ */
 export interface AnalyzerDescription {
     id: string;
     name: string;
     description: string;
 }
 
+/**
+ * Registry that manages the collection of security analyzers.
+ * Supports registering analyzers, filtering by config, and running all enabled analyzers
+ * against an MCP server in parallel.
+ */
 export class AnalyzerRegistry {
     private analyzers: BaseAnalyzer[] = [];
 
+    /**
+     * Register a new analyzer instance with the registry.
+     * @param analyzer - The analyzer to add.
+     */
     register(analyzer: BaseAnalyzer): void {
         this.analyzers.push(analyzer);
     }
 
+    /**
+     * Return only the analyzers that are enabled in the given configuration.
+     * @param config - The audit configuration containing per-check enable/disable flags.
+     * @returns Array of enabled analyzer instances.
+     */
     getEnabled(config: AuditConfig): BaseAnalyzer[] {
         return this.analyzers.filter((a) => {
             const checkConfig = config.checks[a.id as keyof typeof config.checks];
@@ -27,6 +53,10 @@ export class AnalyzerRegistry {
         });
     }
 
+    /**
+     * Get descriptive metadata for all registered analyzers.
+     * @returns Array of analyzer descriptions (id, name, description).
+     */
     getDescriptions(): AnalyzerDescription[] {
         return this.analyzers.map((a) => ({
             id: a.id,
@@ -35,6 +65,13 @@ export class AnalyzerRegistry {
         }));
     }
 
+    /**
+     * Run all enabled analyzers in parallel against the given MCP server.
+     * Disabled analyzers are marked as 'skipped'; failed analyzers are marked as 'error'.
+     * @param server - The parsed MCP server to scan.
+     * @param config - The audit configuration controlling which checks are enabled.
+     * @returns Combined findings from all analyzers and per-analyzer status/timing metadata.
+     */
     async runAll(
         server: MCPServer,
         config: AuditConfig,
@@ -91,6 +128,11 @@ export class AnalyzerRegistry {
     }
 }
 
+/**
+ * Create an AnalyzerRegistry pre-populated with all built-in security analyzers.
+ * @returns A registry containing tool-poisoning, command-injection, dependency,
+ *          network, filesystem, and authentication analyzers.
+ */
 export function createDefaultRegistry(): AnalyzerRegistry {
     const registry = new AnalyzerRegistry();
     registry.register(new ToolPoisoningAnalyzer());
@@ -99,9 +141,20 @@ export function createDefaultRegistry(): AnalyzerRegistry {
     registry.register(new NetworkAnalyzer());
     registry.register(new FilesystemAnalyzer());
     registry.register(new AuthenticationAnalyzer());
+    registry.register(new TlsVerificationAnalyzer());
+    registry.register(new SecurityPostureAnalyzer());
+    registry.register(new CredentialHygieneAnalyzer());
+    registry.register(new CrossServerAnalyzer());
+    registry.register(new ToolAllowlistAnalyzer());
+    registry.register(new RugPullAnalyzer());
     return registry;
 }
 
+/**
+ * Convenience function to get descriptions of all built-in analyzers.
+ * Creates a default registry internally and extracts descriptions.
+ * @returns Array of analyzer descriptions for display purposes.
+ */
 export function getAnalyzerDescriptions(): AnalyzerDescription[] {
     return createDefaultRegistry().getDescriptions();
 }

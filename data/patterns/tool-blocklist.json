@@ -1,0 +1,24 @@
+{
+    "version": "1.0",
+    "lastUpdated": "2026-03-25",
+    "packages": [
+        {
+            "name": "example-malicious-mcp-server",
+            "reason": "Placeholder — community-reported malicious package",
+            "reportedDate": "2026-03-25",
+            "severity": "critical"
+        }
+    ],
+    "tools": [
+        {
+            "namePattern": ".*exfiltrate.*",
+            "reason": "Tool name suggests data exfiltration",
+            "severity": "critical"
+        },
+        {
+            "namePattern": ".*backdoor.*",
+            "reason": "Tool name suggests backdoor functionality",
+            "severity": "critical"
+        }
+    ]
+}
