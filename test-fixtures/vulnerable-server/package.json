@@ -1,0 +1,9 @@
+{
+    "name": "vulnerable-mcp-server",
+    "version": "1.0.0",
+    "description": "Deliberately vulnerable MCP server for testing escalation detection",
+    "main": "index.js",
+    "dependencies": {
+        "expresss": "^1.0.0"
+    }
+}

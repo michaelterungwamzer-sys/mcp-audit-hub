@@ -5,7 +5,7 @@ import fg from 'fast-glob';
 
 export interface ResolverResult {
     root: string;
-    targetType: 'local' | 'npm';
+    targetType: 'local' | 'npm' | 'github';
     sourceFiles: string[];
     packageJson?: Record<string, unknown>;
 }
@@ -65,6 +65,40 @@ function isLocalPath(target: string): boolean {
     );
 }
 
+function isGitHubUrl(target: string): boolean {
+    return (
+        target.startsWith('https://github.com/') ||
+        target.startsWith('github.com/') ||
+        target.startsWith('git@github.com:')
+    );
+}
+
+function parseGitHubUrl(target: string): { owner: string; repo: string; branch: string } | null {
+    // Handle: https://github.com/owner/repo, github.com/owner/repo, git@github.com:owner/repo
+    let normalized = target
+        .replace('https://github.com/', '')
+        .replace('github.com/', '')
+        .replace('git@github.com:', '')
+        .replace(/\.git$/, '');
+
+    // Handle branch: owner/repo/tree/branch or owner/repo#branch
+    let branch = 'main';
+    if (normalized.includes('/tree/')) {
+        const parts = normalized.split('/tree/');
+        normalized = parts[0];
+        branch = parts[1]?.split('/')[0] || 'main';
+    } else if (normalized.includes('#')) {
+        const parts = normalized.split('#');
+        normalized = parts[0];
+        branch = parts[1] || 'main';
+    }
+
+    const [owner, repo] = normalized.split('/');
+    if (!owner || !repo) return null;
+
+    return { owner, repo, branch };
+}
+
 async function resolveLocal(dirPath: string): Promise<ResolverResult> {
     const dirStat = await stat(dirPath);
 
@@ -99,6 +133,65 @@ async function resolveLocal(dirPath: string): Promise<ResolverResult> {
 }
 
 const sessionCache = new Map<string, ResolverResult>();
+
+async function resolveGitHub(target: string): Promise<ResolverResult> {
+    const cached = sessionCache.get(target);
+    if (cached) return cached;
+
+    ensureCleanup();
+
+    const parsed = parseGitHubUrl(target);
+    if (!parsed) {
+        throw new Error(`Invalid GitHub URL: ${target}`);
+    }
+
+    const { owner, repo, branch } = parsed;
+    
+    // Try main branch first, then master as fallback
+    const branches = branch === 'main' ? ['main', 'master'] : [branch];
+    let zipBuffer: Buffer | null = null;
+    let usedBranch = branch;
+
+    for (const tryBranch of branches) {
+        const zipUrl = `https://github.com/${owner}/${repo}/archive/refs/heads/${tryBranch}.zip`;
+        const response = await fetch(zipUrl);
+        if (response.ok) {
+            zipBuffer = Buffer.from(await response.arrayBuffer());
+            usedBranch = tryBranch;
+            break;
+        }
+    }
+
+    if (!zipBuffer) {
+        throw new Error(`Failed to download GitHub repo: ${owner}/${repo} (tried branches: ${branches.join(', ')})`);
+    }
+
+    const tempDir = await mkdtemp(join(tmpdir(), 'mcp-audit-gh-'));
+    tempDirs.add(tempDir);
+
+    // Extract zip using AdmZip-style manual parsing or built-in
+    const { execSync } = await import('node:child_process');
+    const zipPath = join(tempDir, 'repo.zip');
+    const { writeFile } = await import('node:fs/promises');
+    await writeFile(zipPath, zipBuffer);
+
+    // Use PowerShell on Windows, unzip on Unix
+    const isWindows = process.platform === 'win32';
+    if (isWindows) {
+        execSync(`powershell -Command "Expand-Archive -Path '${zipPath}' -DestinationPath '${tempDir}' -Force"`, { stdio: 'pipe' });
+    } else {
+        execSync(`unzip -q '${zipPath}' -d '${tempDir}'`, { stdio: 'pipe' });
+    }
+
+    // GitHub zips extract to repo-branch/ folder
+    const extractedRoot = join(tempDir, `${repo}-${usedBranch}`);
+
+    const result = await resolveLocal(extractedRoot);
+    const ghResult: ResolverResult = { ...result, targetType: 'github' };
+
+    sessionCache.set(target, ghResult);
+    return ghResult;
+}
 
 async function resolveNpm(packageName: string): Promise<ResolverResult> {
     const cached = sessionCache.get(packageName);
@@ -201,6 +294,10 @@ async function resolveNpm(packageName: string): Promise<ResolverResult> {
 export async function resolveTarget(target: string): Promise<ResolverResult> {
     if (isLocalPath(target)) {
         return resolveLocal(target);
+    }
+
+    if (isGitHubUrl(target)) {
+        return resolveGitHub(target);
     }
 
     return resolveNpm(target);
